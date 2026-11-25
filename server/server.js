@@ -4,6 +4,7 @@ const path = require('path');
 const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
+const { checkConnection } = require('./db');
 
 const app = express();
 const server = http.createServer(app);
@@ -36,6 +37,12 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, async () => {
   console.log(`Сервер запущен: http://localhost:${PORT}`);
+
+  try {
+    await checkConnection();
+  } catch (err) {
+    console.error('Не удалось подключиться к базе данных:', err.message);
+  }
 });
