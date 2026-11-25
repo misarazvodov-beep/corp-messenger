@@ -7,9 +7,32 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <div class="box">
-    <h1>Корпоративный мессенджер</h1>
+  <!-- Экран входа -->
+  <div class="box" id="login-box">
+    <h1>Вход</h1>
     <p id="status">Подключаемся к серверу...</p>
+
+    <div id="step-email">
+      <input type="email" id="email" placeholder="Ваша рабочая почта">
+      <button id="btn-request">Получить код</button>
+    </div>
+
+    <div id="step-code" class="hidden">
+      <p>Мы отправили код на вашу почту</p>
+      <input type="text" id="code" placeholder="Код из письма" maxlength="6">
+      <button id="btn-verify">Войти</button>
+      <button id="btn-resend" class="secondary">Отправить код ещё раз</button>
+      <button id="btn-change-email" class="secondary">Указать другую почту</button>
+    </div>
+
+    <p id="message"></p>
+  </div>
+
+  <!-- Экран после входа (позже здесь будут чаты) -->
+  <div class="box hidden" id="chat-box">
+    <h1>Вы вошли</h1>
+    <p id="welcome-user"></p>
+    <button id="btn-logout">Выйти</button>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>

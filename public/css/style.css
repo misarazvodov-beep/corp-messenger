@@ -14,7 +14,49 @@ body {
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   text-align: center;
+  width: 100%;
+  max-width: 340px;
+  box-sizing: border-box;
+  margin: 16px;
 }
 
+input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid #ccd2dc;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: #2a6df4;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button:hover { background: #1f5ad0; }
+
+button.secondary {
+  background: #eef1f6;
+  color: #3b4558;
+  margin-top: 8px;
+}
+
+button.secondary:hover { background: #e0e5ee; }
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hidden { display: none; }
 .ok { color: #1a9c4b; }
 .error { color: #d12c2c; }
