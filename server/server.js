@@ -14,6 +14,7 @@ const PORT = process.env.PORT || 3000;
 
 // Чтобы сервер понимал данные в формате JSON
 app.use(express.json());
+app.use('/api/auth', require('./routes/auth'));
 
 // Отдаём страницы из папки public
 app.use(express.static(path.join(__dirname, '..', 'public')));
