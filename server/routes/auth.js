@@ -162,4 +162,136 @@ router.post('/register', async (req, res) => {
       `INSERT INTO users (email, name, password_hash, registered)
        VALUES ($1, $2, $3, TRUE)
        ON CONFLICT (email) DO UPDATE
-       SET name =
+       SET name = EXCLUDED.name,
+           password_hash = EXCLUDED.password_hash,
+           registered = TRUE,
+           must_change_password = FALSE
+       RETURNING id, email, name, avatar_url`,
+      [email, name, hash]
+    );
+    const user = result.rows[0];
+
+    sendWelcome(email, name).catch((err) => {
+      console.error('Не удалось отправить письмо о регистрации:', err.message);
+    });
+
+    res.json({ token: makeToken(user), user });
+  } catch (err) {
+    console.error('Ошибка регистрации:', err.message);
+    res.status(500).json({ error: 'Ошибка регистрации. Попробуйте позже.' });
+  }
+});
+
+// ---------- Вход ----------
+
+router.post('/login', async (req, res) => {
+  try {
+    const email = cleanEmail(req.body.email);
+    const password = String(req.body.password || '');
+
+    if (isBlocked(email)) {
+      return res.status(429).json({ error: 'Слишком много попыток. Подождите 5 минут.' });
+    }
+
+    const found = await pool.query(
+      `SELECT id, email, name, avatar_url, password_hash, must_change_password, registered
+       FROM users WHERE email = $1`,
+      [email]
+    );
+    const user = found.rows[0];
+
+    const ok = user && user.registered && (await checkPassword(password, user.password_hash));
+    if (!ok) {
+      registerFail(email);
+      return res.status(400).json({ error: 'Неверная почта или пароль' });
+    }
+
+    failed.delete(email);
+    res.json({
+      token: makeToken(user),
+      user: { id: user.id, email: user.email, name: user.name, avatar_url: user.avatar_url },
+      mustChangePassword: user.must_change_password,
+    });
+  } catch (err) {
+    console.error('Ошибка входа:', err.message);
+    res.status(500).json({ error: 'Ошибка входа. Попробуйте позже.' });
+  }
+});
+
+// ---------- Забыли пароль ----------
+
+const lastTemp = new Map();
+
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const email = cleanEmail(req.body.email);
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ error: 'Введите правильный email' });
+    }
+
+    const last = lastTemp.get(email);
+    if (last && Date.now() - last < 60 * 1000) {
+      return res.status(429).json({ error: 'Письмо уже отправлено. Подождите минуту.' });
+    }
+    lastTemp.set(email, Date.now());
+
+    const found = await pool.query(
+      'SELECT id FROM users WHERE email = $1 AND registered = TRUE',
+      [email]
+    );
+
+    if (found.rowCount > 0) {
+      const temp = crypto.randomBytes(6).toString('base64url');
+      const hash = await hashPassword(temp);
+
+      await sendTempPassword(email, temp);
+      await pool.query(
+        'UPDATE users SET password_hash = $1, must_change_password = TRUE WHERE id = $2',
+        [hash, found.rows[0].id]
+      );
+    }
+
+    // Отвечаем одинаково, чтобы нельзя было узнать, есть ли такая почта
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Ошибка временного пароля:', err.message);
+    res.status(500).json({ error: 'Не удалось отправить пароль. Попробуйте позже.' });
+  }
+});
+
+// ---------- Смена пароля (для вошедших) ----------
+
+router.post('/change-password', requireAuth, async (req, res) => {
+  try {
+    const newPassword = String(req.body.newPassword || '');
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'Пароль: не короче 8 символов' });
+    }
+
+    const hash = await hashPassword(newPassword);
+    await pool.query(
+      'UPDATE users SET password_hash = $1, must_change_password = FALSE WHERE id = $2',
+      [hash, req.user.id]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Ошибка смены пароля:', err.message);
+    res.status(500).json({ error: 'Не удалось сменить пароль' });
+  }
+});
+
+// Оставить временный пароль постоянным
+router.post('/keep-password', requireAuth, async (req, res) => {
+  try {
+    await pool.query('UPDATE users SET must_change_password = FALSE WHERE id = $1', [
+      req.user.id,
+    ]);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Ошибка:', err.message);
+    res.status(500).json({ error: 'Не удалось сохранить' });
+  }
+});
+
+module.exports = router;

@@ -7,25 +7,80 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <!-- Экран входа -->
+  <!-- Вход -->
   <div class="box" id="login-box">
     <h1>Вход</h1>
     <p id="status">Подключаемся к серверу...</p>
+    <input type="email" id="login-email" placeholder="Логин (ваша почта)">
+    <input type="password" id="login-password" placeholder="Пароль">
+    <button id="btn-login">Войти</button>
+    <button id="btn-go-forgot" class="secondary">Забыли?</button>
+    <button id="btn-go-register" class="secondary">Регистрация</button>
+    <p id="login-message"></p>
+  </div>
 
-    <div id="step-email">
-      <input type="email" id="email" placeholder="Ваша рабочая почта">
-      <button id="btn-request">Получить код</button>
+  <!-- Регистрация -->
+  <div class="box hidden" id="register-box">
+    <h1>Регистрация</h1>
+
+    <div id="reg-step-email">
+      <input type="email" id="reg-email" placeholder="Ваша рабочая почта">
+      <button id="btn-reg-request">Получить код</button>
     </div>
 
-    <div id="step-code" class="hidden">
+    <div id="reg-step-code" class="hidden">
       <p>Мы отправили код на вашу почту</p>
-      <input type="text" id="code" placeholder="Код из письма" maxlength="6">
-      <button id="btn-verify">Войти</button>
-      <button id="btn-resend" class="secondary">Отправить код ещё раз</button>
-      <button id="btn-change-email" class="secondary">Указать другую почту</button>
+      <input type="text" id="reg-code" placeholder="Код из письма" maxlength="6">
+      <button id="btn-reg-verify">Подтвердить почту</button>
+      <button id="btn-reg-resend" class="secondary">Отправить код ещё раз</button>
+      <button id="btn-reg-change-email" class="secondary">Указать другую почту</button>
     </div>
 
-    <p id="message"></p>
+    <div id="reg-step-profile" class="hidden">
+      <p>Почта подтверждена. Придумайте ник и пароль.</p>
+      <input type="text" id="reg-nickname" placeholder="Ник (как вас видят в чатах)" maxlength="30">
+      <input type="password" id="reg-password" placeholder="Пароль (не короче 8 символов)">
+      <input type="password" id="reg-password2" placeholder="Повторите пароль">
+      <button id="btn-reg-finish">Завершить регистрацию</button>
+    </div>
+
+    <p id="reg-message"></p>
+    <button id="btn-reg-back" class="secondary">Назад ко входу</button>
+  </div>
+
+  <!-- Забыли -->
+  <div class="box hidden" id="forgot-box">
+    <h1>Забыли?</h1>
+
+    <div id="forgot-menu">
+      <button id="btn-forgot-login">Забыли логин</button>
+      <button id="btn-forgot-password" class="secondary">Забыли пароль</button>
+      <button id="btn-forgot-back" class="secondary">Назад ко входу</button>
+    </div>
+
+    <div id="forgot-login-info" class="hidden">
+      <p>К сожалению, мы не можем восстановить ваш логин, однако можем подсказать: ваш логин - это почта, которую вы указывали при регистрации.</p>
+      <button id="btn-forgot-login-back" class="secondary">Назад</button>
+    </div>
+
+    <div id="forgot-password-form" class="hidden">
+      <p>Укажите почту, и мы отправим на неё временный пароль.</p>
+      <input type="email" id="forgot-email" placeholder="Ваша почта">
+      <button id="btn-send-temp">Отправить временный пароль</button>
+      <button id="btn-forgot-password-back" class="secondary">Назад</button>
+    </div>
+
+    <p id="forgot-message"></p>
+  </div>
+
+  <!-- Вход по временному паролю -->
+  <div class="box hidden" id="change-box">
+    <h1>Временный пароль</h1>
+    <p>Вы вошли по временному паролю. Сделать его постоянным или задать новый?</p>
+    <button id="btn-keep-password">Оставить этот пароль</button>
+    <input type="password" id="new-password" placeholder="Новый пароль (не короче 8 символов)">
+    <button id="btn-set-password" class="secondary">Задать новый пароль</button>
+    <p id="change-message"></p>
   </div>
 
   <!-- Основной экран после входа -->

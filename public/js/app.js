@@ -1,42 +1,39 @@
-// Соединение с сервером начинается только после входа (нужен пропуск)
 const socket = io({ autoConnect: false });
-
 const $ = (id) => document.getElementById(id);
 
-const statusEl = $('status');
-const messageEl = $('message');
-const loginBox = $('login-box');
-const chatApp = $('chat-app');
-const stepEmail = $('step-email');
-const stepCode = $('step-code');
-const emailInput = $('email');
-const codeInput = $('code');
-const resendButton = $('btn-resend');
+const SCREENS = ['login-box', 'register-box', 'forgot-box', 'change-box', 'chat-app'];
+
 const roomsList = $('rooms-list');
 const usersList = $('users-list');
 const messagesEl = $('messages');
 const messageInput = $('message-input');
 const chatEmpty = $('chat-empty');
 const chatRoom = $('chat-room');
+const chatApp = $('chat-app');
 const roomTitle = $('room-title');
 const groupModal = $('group-modal');
 const groupName = $('group-name');
 const groupMembers = $('group-members');
 
-let cooldownTimer = null;
 let me = null;
 let currentRoomId = null;
 let rooms = [];
 let users = [];
+let registrationToken = null;
+let cooldownTimer = null;
 
 // ---------- Общие помощники ----------
 
-function showMessage(text, isError) {
-  messageEl.textContent = text;
-  messageEl.className = isError ? 'error' : 'ok';
+function showScreen(id) {
+  SCREENS.forEach((s) => $(s).classList.toggle('hidden', s !== id));
 }
 
-// Запрос к серверу. Если есть пропуск, прикладываем его
+function setMsg(id, text, isError) {
+  const el = $(id);
+  el.textContent = text;
+  el.className = isError ? 'error' : 'ok';
+}
+
 async function api(method, url, data) {
   const headers = { 'Content-Type': 'application/json' };
   const token = localStorage.getItem('token');
@@ -53,98 +50,188 @@ async function api(method, url, data) {
   return { ok: response.ok, data: result };
 }
 
-// Проверка, что сервер доступен
 fetch('/api/health')
   .then((r) => {
     if (!r.ok) throw new Error();
-    statusEl.textContent = 'Сервер доступен';
-    statusEl.className = 'ok';
+    $('status').textContent = 'Сервер доступен';
+    $('status').className = 'ok';
   })
   .catch(() => {
-    statusEl.textContent = 'Сервер недоступен';
-    statusEl.className = 'error';
+    $('status').textContent = 'Сервер недоступен';
+    $('status').className = 'error';
   });
 
-// ---------- Вход по коду ----------
+// ---------- Вход ----------
+
+$('btn-login').addEventListener('click', async () => {
+  const email = $('login-email').value.trim();
+  const password = $('login-password').value;
+
+  const result = await api('POST', '/api/auth/login', { email, password });
+  if (!result.ok) return setMsg('login-message', result.data.error, true);
+
+  localStorage.setItem('token', result.data.token);
+  localStorage.setItem('user', JSON.stringify(result.data.user));
+  me = result.data.user;
+  $('login-password').value = '';
+
+  if (result.data.mustChangePassword) {
+    localStorage.setItem('mustChange', '1');
+    setMsg('login-message', '', false);
+    showScreen('change-box');
+  } else {
+    showApp(me);
+  }
+});
+
+$('btn-go-register').addEventListener('click', () => {
+  setMsg('reg-message', '', false);
+  showScreen('register-box');
+});
+$('btn-go-forgot').addEventListener('click', () => {
+  openForgotMenu();
+  showScreen('forgot-box');
+});
+
+// ---------- Регистрация ----------
 
 function startCooldown() {
+  const button = $('btn-reg-resend');
   let seconds = 60;
-  resendButton.disabled = true;
-  resendButton.textContent = 'Отправить код ещё раз (' + seconds + ')';
+  button.disabled = true;
+  button.textContent = 'Отправить код ещё раз (' + seconds + ')';
 
   clearInterval(cooldownTimer);
   cooldownTimer = setInterval(() => {
     seconds--;
     if (seconds <= 0) {
       clearInterval(cooldownTimer);
-      resendButton.disabled = false;
-      resendButton.textContent = 'Отправить код ещё раз';
+      button.disabled = false;
+      button.textContent = 'Отправить код ещё раз';
     } else {
-      resendButton.textContent = 'Отправить код ещё раз (' + seconds + ')';
+      button.textContent = 'Отправить код ещё раз (' + seconds + ')';
     }
   }, 1000);
 }
 
-function showLogin() {
-  clearInterval(cooldownTimer);
-  chatApp.classList.add('hidden');
-  loginBox.classList.remove('hidden');
-  stepCode.classList.add('hidden');
-  stepEmail.classList.remove('hidden');
-  codeInput.value = '';
-  showMessage('', false);
-}
-
 async function requestCode(isResend) {
-  const email = emailInput.value.trim();
-  showMessage('Отправляем код...', false);
+  setMsg('reg-message', 'Отправляем код...', false);
+  const result = await api('POST', '/api/auth/request-code', {
+    email: $('reg-email').value.trim(),
+  });
+  if (!result.ok) return setMsg('reg-message', result.data.error, true);
 
-  const result = await api('POST', '/api/auth/request-code', { email });
-  if (!result.ok) {
-    showMessage(result.data.error, true);
-    return;
-  }
-
-  stepEmail.classList.add('hidden');
-  stepCode.classList.remove('hidden');
-  showMessage(isResend ? 'Новый код отправлен.' : 'Код отправлен. Проверьте почту.', false);
+  $('reg-step-email').classList.add('hidden');
+  $('reg-step-code').classList.remove('hidden');
+  setMsg('reg-message', isResend ? 'Новый код отправлен.' : 'Код отправлен. Проверьте почту.', false);
   startCooldown();
 }
 
-$('btn-request').addEventListener('click', () => requestCode(false));
-resendButton.addEventListener('click', () => requestCode(true));
+$('btn-reg-request').addEventListener('click', () => requestCode(false));
+$('btn-reg-resend').addEventListener('click', () => requestCode(true));
 
-$('btn-change-email').addEventListener('click', () => {
+$('btn-reg-change-email').addEventListener('click', () => {
   clearInterval(cooldownTimer);
-  stepCode.classList.add('hidden');
-  stepEmail.classList.remove('hidden');
-  codeInput.value = '';
-  emailInput.focus();
-  showMessage('', false);
+  $('reg-step-code').classList.add('hidden');
+  $('reg-step-email').classList.remove('hidden');
+  $('reg-code').value = '';
+  setMsg('reg-message', '', false);
 });
 
-$('btn-verify').addEventListener('click', async () => {
-  const email = emailInput.value.trim();
-  const code = codeInput.value.trim();
+$('btn-reg-verify').addEventListener('click', async () => {
+  const result = await api('POST', '/api/auth/verify-email', {
+    email: $('reg-email').value.trim(),
+    code: $('reg-code').value.trim(),
+  });
+  if (!result.ok) return setMsg('reg-message', result.data.error, true);
 
-  const result = await api('POST', '/api/auth/verify', { email, code });
-  if (!result.ok) {
-    showMessage(result.data.error, true);
-    return;
+  registrationToken = result.data.registrationToken;
+  clearInterval(cooldownTimer);
+  $('reg-step-code').classList.add('hidden');
+  $('reg-step-profile').classList.remove('hidden');
+  setMsg('reg-message', '', false);
+});
+
+$('btn-reg-finish').addEventListener('click', async () => {
+  const password = $('reg-password').value;
+  if (password !== $('reg-password2').value) {
+    return setMsg('reg-message', 'Пароли не совпадают', true);
   }
+
+  const result = await api('POST', '/api/auth/register', {
+    registrationToken,
+    nickname: $('reg-nickname').value.trim(),
+    password,
+  });
+  if (!result.ok) return setMsg('reg-message', result.data.error, true);
 
   localStorage.setItem('token', result.data.token);
   localStorage.setItem('user', JSON.stringify(result.data.user));
   showApp(result.data.user);
 });
 
+$('btn-reg-back').addEventListener('click', () => {
+  clearInterval(cooldownTimer);
+  $('reg-step-email').classList.remove('hidden');
+  $('reg-step-code').classList.add('hidden');
+  $('reg-step-profile').classList.add('hidden');
+  showScreen('login-box');
+});
+
+// ---------- Забыли логин или пароль ----------
+
+function openForgotMenu() {
+  $('forgot-menu').classList.remove('hidden');
+  $('forgot-login-info').classList.add('hidden');
+  $('forgot-password-form').classList.add('hidden');
+  setMsg('forgot-message', '', false);
+}
+
+$('btn-forgot-login').addEventListener('click', () => {
+  $('forgot-menu').classList.add('hidden');
+  $('forgot-login-info').classList.remove('hidden');
+});
+$('btn-forgot-password').addEventListener('click', () => {
+  $('forgot-menu').classList.add('hidden');
+  $('forgot-password-form').classList.remove('hidden');
+});
+$('btn-forgot-login-back').addEventListener('click', openForgotMenu);
+$('btn-forgot-password-back').addEventListener('click', openForgotMenu);
+$('btn-forgot-back').addEventListener('click', () => showScreen('login-box'));
+
+$('btn-send-temp').addEventListener('click', async () => {
+  const result = await api('POST', '/api/auth/forgot-password', {
+    email: $('forgot-email').value.trim(),
+  });
+  if (!result.ok) return setMsg('forgot-message', result.data.error, true);
+  setMsg('forgot-message', 'Если такая почта зарегистрирована, мы отправили на неё временный пароль.', false);
+});
+
+// ---------- Вход по временному паролю ----------
+
+$('btn-keep-password').addEventListener('click', async () => {
+  const result = await api('POST', '/api/auth/keep-password');
+  if (!result.ok) return setMsg('change-message', result.data.error, true);
+  localStorage.removeItem('mustChange');
+  showApp(me);
+});
+
+$('btn-set-password').addEventListener('click', async () => {
+  const result = await api('POST', '/api/auth/change-password', {
+    newPassword: $('new-password').value,
+  });
+  if (!result.ok) return setMsg('change-message', result.data.error, true);
+  localStorage.removeItem('mustChange');
+  $('new-password').value = '';
+  showApp(me);
+});
+
 // ---------- Вход в мессенджер и выход ----------
 
 function showApp(user) {
   me = user;
-  loginBox.classList.add('hidden');
-  chatApp.classList.remove('hidden');
-  $('welcome-user').textContent = user.email;
+  showScreen('chat-app');
+  $('welcome-user').textContent = user.name || user.email;
 
   socket.auth = { token: localStorage.getItem('token') };
   if (!socket.connected) socket.connect();
@@ -157,6 +244,7 @@ function logout() {
   socket.disconnect();
   localStorage.removeItem('token');
   localStorage.removeItem('user');
+  localStorage.removeItem('mustChange');
   me = null;
   currentRoomId = null;
   rooms = [];
@@ -165,7 +253,7 @@ function logout() {
   chatRoom.classList.add('hidden');
   chatEmpty.classList.remove('hidden');
   chatApp.classList.remove('show-chat');
-  showLogin();
+  showScreen('login-box');
 }
 
 $('btn-logout').addEventListener('click', logout);
@@ -174,7 +262,6 @@ $('btn-logout').addEventListener('click', logout);
 
 const COLORS = ['#e17076', '#faa774', '#a695e7', '#7bc862', '#6ec9cb', '#65aadd', '#ee7aae'];
 
-// Круглая аватарка с первой буквой имени
 function createAvatar(name, isOnline) {
   const el = document.createElement('div');
   el.className = 'avatar';
@@ -323,7 +410,6 @@ async function openRoom(id, title) {
   messageInput.focus();
 }
 
-// Открыть личный чат с сотрудником (если чата нет, сервер его создаст)
 async function openDirect(user) {
   const result = await api('POST', '/api/chat/rooms/direct', { userId: user.id });
   if (!result.ok) {
@@ -352,7 +438,6 @@ messageInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') sendMessage();
 });
 
-// Кнопка "Назад" на телефоне
 $('btn-back').addEventListener('click', () => {
   chatApp.classList.remove('show-chat');
 });
@@ -397,12 +482,10 @@ $('btn-group-create').addEventListener('click', async () => {
 
 // ---------- События от сервера в реальном времени ----------
 
-// Пропуск не подошёл: возвращаем на экран входа
 socket.on('connect_error', (err) => {
   if (err.message === 'Нужно войти') logout();
 });
 
-// Пришло новое сообщение
 socket.on('new-message', async (m) => {
   if (m.room_id === currentRoomId) {
     addMessage(m);
@@ -411,7 +494,6 @@ socket.on('new-message', async (m) => {
   await loadRooms();
 });
 
-// Кто-то вошёл в сеть или вышел
 socket.on('presence', ({ userId, isOnline }) => {
   const user = users.find((u) => u.id === userId);
   if (user) {
@@ -424,8 +506,9 @@ socket.on('presence', ({ userId, isOnline }) => {
 
 // ---------- Старт страницы ----------
 
-// Если человек уже входил раньше, сразу пускаем
 const savedUser = localStorage.getItem('user');
 if (localStorage.getItem('token') && savedUser) {
-  showApp(JSON.parse(savedUser));
+  me = JSON.parse(savedUser);
+  if (localStorage.getItem('mustChange')) showScreen('change-box');
+  else showApp(me);
 }
