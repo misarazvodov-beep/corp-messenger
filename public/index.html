@@ -28,11 +28,49 @@
     <p id="message"></p>
   </div>
 
-  <!-- Экран после входа (позже здесь будут чаты) -->
-  <div class="box hidden" id="chat-box">
-    <h1>Вы вошли</h1>
-    <p id="welcome-user"></p>
-    <button id="btn-logout">Выйти</button>
+  <!-- Основной экран после входа -->
+  <div id="chat-app" class="hidden">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-top">
+        <span id="welcome-user"></span>
+        <button id="btn-logout" class="secondary small">Выйти</button>
+      </div>
+
+      <h3>Чаты</h3>
+      <ul id="rooms-list" class="list"></ul>
+      <button id="btn-new-group" class="secondary">Создать группу</button>
+
+      <h3>Сотрудники</h3>
+      <ul id="users-list" class="list"></ul>
+    </aside>
+
+    <main class="chat-main" id="chat-main">
+      <div id="chat-empty" class="chat-empty">Выберите чат или сотрудника</div>
+
+      <div id="chat-room" class="chat-room hidden">
+        <header class="room-header">
+          <button id="btn-back" class="secondary small back">Назад</button>
+          <span id="room-title"></span>
+        </header>
+        <div id="messages" class="messages"></div>
+        <div class="composer">
+          <input type="text" id="message-input" placeholder="Написать сообщение..." maxlength="2000">
+          <button id="btn-send">Отправить</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Окно создания группового чата -->
+  <div id="group-modal" class="modal hidden">
+    <div class="modal-box">
+      <h2>Новая группа</h2>
+      <input type="text" id="group-name" placeholder="Название группы" maxlength="100">
+      <p>Участники:</p>
+      <div id="group-members" class="members"></div>
+      <button id="btn-group-create">Создать</button>
+      <button id="btn-group-cancel" class="secondary">Отмена</button>
+    </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
