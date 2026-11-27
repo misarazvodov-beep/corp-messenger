@@ -17,7 +17,9 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 // Вход по коду и работа с чатами
+app.use('/api/auth', require('./routes/register'));
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/chat', require('./routes/unread'));
 app.use('/api/chat', require('./routes/rooms'));
 
 // Отдаём страницы из папки public

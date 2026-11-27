@@ -326,3 +326,9 @@ button:disabled {
   .back { display: inline-block; }
   .msg { max-width: 85%; }
 }
+.badge{margin-left:auto;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#3390ec;color:#fff;font-size:12px;font-weight:bold;display:flex;align-items:center;justify-content:center;flex:none}
+.item.active .badge{background:#fff;color:#3390ec}
+
+select, textarea { display: block; width: 100%; padding: 12px; margin: 12px 0; border: 1px solid #ccd2dc; border-radius: 8px; font-size: 16px; font-family: inherit; background: #fff; }
+textarea { min-height: 70px; resize: vertical; }
+.field-label { display: block; text-align: left; font-size: 13px; color: #8a949e; margin-top: 8px; }

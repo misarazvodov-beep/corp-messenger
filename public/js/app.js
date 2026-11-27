@@ -160,7 +160,10 @@ $('btn-reg-finish').addEventListener('click', async () => {
 
   const result = await api('POST', '/api/auth/register', {
     registrationToken,
-    nickname: $('reg-nickname').value.trim(),
+    fullName: $('reg-fullname').value.trim(),
+    birthDate: $('reg-birth').value,
+    department: $('reg-department').value,
+    position: $('reg-position').value.trim(),
     password,
   });
   if (!result.ok) return setMsg('reg-message', result.data.error, true);
@@ -253,6 +256,8 @@ function logout() {
   chatRoom.classList.add('hidden');
   chatEmpty.classList.remove('hidden');
   chatApp.classList.remove('show-chat');
+  $('login-email').value='';
+  $('login-password').value='';
   showScreen('login-box');
 }
 

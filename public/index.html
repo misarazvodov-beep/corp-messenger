@@ -11,8 +11,8 @@
   <div class="box" id="login-box">
     <h1>Вход</h1>
     <p id="status">Подключаемся к серверу...</p>
-    <input type="email" id="login-email" placeholder="Логин (ваша почта)">
-    <input type="password" id="login-password" placeholder="Пароль">
+    <input type="email" id="login-email" autocomplete="off" placeholder="Логин (ваша почта)">
+    <input type="password" id="login-password" autocomplete="new-password" placeholder="Пароль">
     <button id="btn-login">Войти</button>
     <button id="btn-go-forgot" class="secondary">Забыли?</button>
     <button id="btn-go-register" class="secondary">Регистрация</button>
@@ -37,8 +37,21 @@
     </div>
 
     <div id="reg-step-profile" class="hidden">
-      <p>Почта подтверждена. Придумайте ник и пароль.</p>
-      <input type="text" id="reg-nickname" placeholder="Ник (как вас видят в чатах)" maxlength="30">
+      <p>Почта подтверждена. Заполните профиль.</p>
+      <input type="text" id="reg-fullname" placeholder="ФИО (Фамилия Имя Отчество)" maxlength="100">
+      <label class="field-label">Дата рождения</label>
+      <input type="date" id="reg-birth">
+      <select id="reg-department">
+        <option value="">Выберите отдел</option>
+        <option>HR</option>
+        <option>QA</option>
+        <option>Разработка</option>
+        <option>Бухгалтерия</option>
+        <option>Финансовый отдел</option>
+        <option>Отдел продаж</option>
+        <option>Маркетинговый отдел</option>
+      </select>
+      <input type="text" id="reg-position" placeholder="Должность (например, руководитель отдела)" maxlength="100">
       <input type="password" id="reg-password" placeholder="Пароль (не короче 8 символов)">
       <input type="password" id="reg-password2" placeholder="Повторите пароль">
       <button id="btn-reg-finish">Завершить регистрацию</button>
@@ -130,5 +143,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/app.js"></script>
+  <script src="/js/forms.js"></script>
+  <script src="/js/notify.js"></script>
 </body>
 </html>
