@@ -11,10 +11,7 @@ router.use(requireAuth);
 router.get('/users', async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT id, name, email, is_online
-       FROM users
-       WHERE id <> $1
-       ORDER BY name`,
+      `SELECT id, name, email, is_online, department, position, (id = $1) AS is_me FROM users WHERE registered = TRUE ORDER BY name`,
       [req.user.id]
     );
     res.json(result.rows);
